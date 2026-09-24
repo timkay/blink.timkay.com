@@ -205,7 +205,7 @@ class Controller:
     tab_index=0
     if tabs:self.choose(root,tabs[0]);root=self.screen()
     for _ in range(24):
-        rows=station_rows(root,ports=location in SECONDARY_LOCATIONS)
+        rows=station_rows(root,ports=location in SECONDARY_LOCATIONS and location!=SECONDARY_LOCATION)
         changed=False
         for ident,(status,node) in rows.items():
             old=self.db.execute('SELECT status FROM stations WHERE id=?',(ident,)).fetchone()

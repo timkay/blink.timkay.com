@@ -2,6 +2,8 @@
 
 ## Multi-site update — September 23
 
+September 24 correction: restored Redwood City - CN37-12 (1250 Veterans Boulevard, 21 ports) as the first secondary site and second dashboard group. It is distinct from Redwood City SMOB - CN37-20 at 905 Maple Street (26 ports). The earlier removal of CN37-12 was a mistaken interpretation of the request to remove SMOB. Existing serial identifiers and history are preserved for CN37-12; its readings do not switch to the composite port identifiers used by newly added sites.
+
 `sites.json` now supplies the controller and dashboard location list. Confirmed new Blink Favorites: AEM Corporate (145 King Street, Toronto; 5 ports), First Baptist Church of Glenarden (600 Watkins Park Drive, Upper Marlboro; 8 ports), SemaConnect US R&D (4961 Tesla Drive, Bowie; 4 ports), and SemaConnect Bangalore Production facility (4 Level 2 plus 7 DC ports). The last site appears near Bowie in Blink but its address includes Bengaluru; this is app-reported data, not a verified physical location. Redwood has been removed from Favorites and the monitoring rotation; historical records are retained.
 
 Run four Gateway scans, then one secondary site, rotating through the secondary list. A remote failure resets the next scan to Gateway and advances the remote index. Multi-port sites store serial plus port label to avoid overwriting one port with another. Secondary sections are read-only; Start keeps its original exact Gateway serial validation. The mixed Level 2/DC site is scanned across both tabs. Remote status is marked stale after an hour, accounting for the longer round robin; Gateway's existing freshness checks remain.
