@@ -1,4 +1,5 @@
 const json = (data, status=200) => Response.json(data, {status, headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+import sites from '../sites.json' with {type:'json'};
 const now = () => Math.floor(Date.now()/1000);
 async function authorized(req, secret) {
   if (!secret) return false;
@@ -16,7 +17,7 @@ export default {
    if (req.method==='GET' && path==='/api/status') {
     const stations=await env.DB.prepare("SELECT s.*,COALESCE(l.location,'1850 Gateway Drive') AS location FROM stations s LEFT JOIN station_locations l ON l.id=s.id ORDER BY s.id").all();
     const d=await env.DB.prepare('SELECT * FROM device WHERE id=1').first();
-    const result={time,location:'1850 Gateway Drive',stations:stations.results.filter(s=>s.location==='1850 Gateway Drive'),other_locations:[{name:'Redwood City - CN37-12',address:'1250 Veterans Boulevard, Redwood City',stations:stations.results.filter(s=>s.location==='Redwood City - CN37-12')}],device:d?{checked:d.checked,...JSON.parse(d.data)}:null,admin};
+    const result={time,location:'1850 Gateway Drive',stations:stations.results.filter(s=>s.location==='1850 Gateway Drive'),other_locations:sites.slice(1).map(site=>({...site,stations:stations.results.filter(s=>s.location===site.name)})),device:d?{checked:d.checked,...JSON.parse(d.data)}:null,admin};
     result.sessions=(await env.DB.prepare(admin?'SELECT * FROM sessions ORDER BY updated DESC LIMIT 100':"SELECT * FROM sessions WHERE state!='ended' ORDER BY updated DESC LIMIT 100").all()).results.map(s=>{
      const data=JSON.parse(s.data);
      return admin?{...s,data}:{station:s.station,started:s.started,updated:s.updated,state:s.state,kwh:s.kwh,data:{station_candidate:data.station_candidate,kw:data.kw,elapsed:data.elapsed,start_is_observation:data.start_is_observation}};
@@ -55,8 +56,8 @@ export default {
     if(Number(req.headers.get('content-length')||0)>250000) return json({error:'Too large'},413);
     const b=await req.json(), statements=[];
     for(const s of (b.stations||[]).slice(0,100)) {
-     if(!/^BAE\d{6}$/.test(s.id)||!Number.isFinite(s.checked)) continue;
-     if(s.location&&!['1850 Gateway Drive','Redwood City - CN37-12'].includes(s.location)) continue;
+     if(!/^BAE\d{6}(?:~[A-Za-z0-9_-]{1,80})?$/.test(s.id)||!Number.isFinite(s.checked)) continue;
+     if(s.location&&!sites.some(site=>site.name===s.location)) continue;
      statements.push(env.DB.prepare('INSERT INTO stations VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET status=excluded.status,changed=CASE WHEN stations.status<>excluded.status THEN excluded.checked ELSE stations.changed END,checked=excluded.checked WHERE excluded.checked>stations.checked').bind(s.id,s.status,s.checked,s.checked));
      statements.push(env.DB.prepare("INSERT INTO station_locations(id,location) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET location=excluded.location").bind(s.id,s.location||'1850 Gateway Drive'));
     }

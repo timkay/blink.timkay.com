@@ -1,0 +1,7 @@
+[
+  {"name":"1850 Gateway Drive","address":"1850 Gateway Drive, San Mateo","ports":19},
+  {"name":"AEM Corporate","address":"145 King Street, Toronto","ports":5},
+  {"name":"First Baptist Church of Glenarden","address":"600 Watkins Park Drive, Upper Marlboro","ports":8},
+  {"name":"SemaConnect Bangalore Production facility","address":"Blink reports Bengaluru, Bowie (location unverified)","ports":11,"tabs":["Level 2","DC Fast"]},
+  {"name":"SemaConnect US R&D (CTEP Testing)","address":"4961 Tesla Drive, Bowie","ports":4}
+]

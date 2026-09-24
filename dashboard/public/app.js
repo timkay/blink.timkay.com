@@ -171,21 +171,26 @@ async function refresh(){try{
  $('#empty-connected').hidden=!!cards.length;
  priority.replaceChildren(...cards);priority.hidden=!cards.length;
  renderGroups($('#stations'),false);
- const redwood=d.other_locations?.find(x=>x.name==='Redwood City - CN37-12');
- const remoteStations=redwood?.stations||[];
+ const remoteSections=[];
+ for(const site of d.other_locations||[]){
+ const remoteStations=site.stations||[];
  const spacerText=[...$('#stations').querySelectorAll('.station-stats')].map(n=>n.textContent).sort((a,b)=>b.length-a.length)[0]||'';
  const remoteBody=el('tbody');
  remoteStations.forEach((s,i)=>{
-   const tr=row(s,redwoodStaleAfter);
+   const tr=row(s,3600);
+   tr.querySelector('.station-id').textContent=s.id.replace('~',' · ').replaceAll('_',' ');
    const spacer=el('td','\u00a0','station-spacer');
    const sizing=el('span',spacerText,'spacer-sizing');sizing.setAttribute('aria-hidden','true');
    spacer.append(sizing);tr.append(spacer);
    if(i===0){const number=el('th','1','group-number');number.scope='rowgroup';number.rowSpan=remoteStations.length;tr.prepend(number);}
    remoteBody.append(tr);
  });
- $('#redwood-stations').replaceChildren(...(remoteStations.length?[remoteBody]:[]));
- const remoteCounts={};for(const s of remoteStations){const status=age(s.checked)>redwoodStaleAfter?'Stale':s.status;remoteCounts[status]=(remoteCounts[status]||0)+1;}
- $('#redwood-summary').textContent=remoteStations.length?Object.entries(remoteCounts).map(([status,count])=>`${count} ${status}`).join(' · '):'Waiting for first scan';
+ const table=el('table');table.setAttribute('aria-label',site.name);table.append(remoteBody);
+ const remoteCounts={};for(const s of remoteStations){const status=age(s.checked)>3600?'Stale':s.status;remoteCounts[status]=(remoteCounts[status]||0)+1;}
+ const summary=remoteStations.length?Object.entries(remoteCounts).map(([status,count])=>`${count} ${status}`).join(' · '):'Waiting for first scan';
+ const section=el('section');section.append(el('h2',site.name),el('p',`${site.address} · ${summary}`,'location-info'),table);remoteSections.push(section);
+ }
+ $('#other-locations').replaceChildren(...remoteSections);
  }catch(e){$('#connection').textContent='Cannot refresh: '+e.message;}}
 refresh();
 // Connected/charging status should appear promptly; idle station lists can poll less often.

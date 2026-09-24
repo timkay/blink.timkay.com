@@ -30,6 +30,9 @@ END={'Thank you for charging!','You are all charged up!','Charging session has b
 PRIMARY_LOCATION='1850 Gateway Drive'
 SECONDARY_LOCATION='Redwood City - CN37-12'
 LOCATION_COUNTS={PRIMARY_LOCATION:19,SECONDARY_LOCATION:21}
+SITES=json.loads((ROOT/'sites.json').read_text())
+LOCATION_COUNTS.update({s['name']:s['ports'] for s in SITES})
+SECONDARY_LOCATIONS=[s['name'] for s in SITES if s['name']!=PRIMARY_LOCATION]
 
 def stamp(): return int(time.time())
 def texts(root): return [n.get('text') for n in root.iter('node') if n.get('text')]
@@ -39,8 +42,19 @@ def center(node):
     x1,y1,x2,y2=map(int,re.findall(r'\d+',node.get('bounds','')))
     if x2<=x1 or y2<=y1: raise ValueError('Target not visible')
     return (x1+x2)//2,(y1+y2)//2
-def station_rows(root):
+def station_rows(root,ports=False):
     result={}
+    if ports:
+        for node in root.iter('node'):
+            desc=node.get('content-desc','')
+            if node.get('clickable')!='true' or not desc.startswith('selectedPortIcon '):continue
+            ids=[v for v in texts(node) if SERIAL.fullmatch(v)]
+            statuses=[v for v in texts(node) if v in STATUSES]
+            if not ids or not statuses:continue
+            label=desc.split(',')[0].removeprefix('selectedPortIcon ').strip()
+            ident=ids[0]+'~'+re.sub(r'[^A-Za-z0-9-]+','_',label)
+            result[ident]=(statuses[0],node)
+        return result
     # Smallest subtree containing exactly one serial and a status keeps rows paired.
     for node in reversed(list(root.iter('node'))):
         values=texts(node); ids={v for v in values if SERIAL.fullmatch(v)}
@@ -143,6 +157,12 @@ class Controller:
         if 'Favorite' in texts(root):break
         root=self.back()
     if 'Favorite' not in texts(root):raise RuntimeError('Could not reach pinned locations')
+    for _ in range(8):
+        match=find(root,name)
+        if match is not None:
+            try:center(match);break
+            except ValueError:pass
+        self.adb('shell','input','swipe','380','1300','380','400','300');root=self.screen()
     self.choose(root,name);root=self.screen()
     if name not in texts(root):raise RuntimeError('Selected location did not confirm '+name)
     self.visible_location=name
@@ -181,8 +201,11 @@ class Controller:
     direction=self.scan_directions.get(location,'down')
     expected=LOCATION_COUNTS[location]
     allrows={};last=None
-    for _ in range(10):
-        rows=station_rows(root)
+    tabs=next((s.get('tabs',[]) for s in SITES if s['name']==location),[])
+    tab_index=0
+    if tabs:self.choose(root,tabs[0]);root=self.screen()
+    for _ in range(24):
+        rows=station_rows(root,ports=location in SECONDARY_LOCATIONS)
         changed=False
         for ident,(status,node) in rows.items():
             old=self.db.execute('SELECT status FROM stations WHERE id=?',(ident,)).fetchone()
@@ -196,7 +219,11 @@ class Controller:
         if target in rows:return root,rows[target]
         if not target and len(allrows)>=expected:break
         signature=tuple(texts(root))
-        if signature==last:break
+        if signature==last:
+            if tab_index+1<len(tabs):
+                root=self.scroll_to_top(location,root);tab_index+=1
+                self.choose(root,tabs[tab_index]);root=self.screen();last=None;direction='down';continue
+            break
         last=signature
         start,end=('1300','620') if direction=='down' else ('620','1300')
         self.adb('shell','input','swipe','380',start,'380',end,'400');root=self.screen()
@@ -234,10 +261,20 @@ class Controller:
         self.error='Availability speech failed; alert remains armed: '+str(e)
  def scheduled_scan(self):
     primary_scans=self.get('primary_scans_since_secondary') or 0
-    location=SECONDARY_LOCATION if primary_scans>=4 else PRIMARY_LOCATION
-    self.scan(location=location)
-    self.save('primary_scans_since_secondary',0 if location==SECONDARY_LOCATION else primary_scans+1)
-    delay=0 if location==SECONDARY_LOCATION else (30 if getattr(self,'active',False) or getattr(self,'session',None) else 5)
+    secondary_index=self.get('secondary_index') or 0
+    location=SECONDARY_LOCATIONS[secondary_index%len(SECONDARY_LOCATIONS)] if primary_scans>=4 else PRIMARY_LOCATION
+    secondary=location!=PRIMARY_LOCATION
+    try:self.scan(location=location)
+    except Exception:
+        # A failed remote site must not trap the observer away from Gateway.
+        if secondary:
+            self.save('secondary_index',(secondary_index+1)%len(SECONDARY_LOCATIONS))
+            self.save('primary_scans_since_secondary',0)
+            self.next_scan=0
+        raise
+    if secondary:self.save('secondary_index',(secondary_index+1)%len(SECONDARY_LOCATIONS))
+    self.save('primary_scans_since_secondary',0 if secondary else primary_scans+1)
+    delay=0 if secondary else (30 if getattr(self,'active',False) or getattr(self,'session',None) else 5)
     self.next_scan=stamp()+delay
     return location
  def completion_alert(self):

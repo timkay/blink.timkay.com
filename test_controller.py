@@ -9,6 +9,16 @@ def tree(items):
     for text,desc in items:ET.SubElement(root,'node',{'text':text,'content-desc':desc})
     return root
 class Tests(unittest.TestCase):
+    def setUp(self):
+        rotation=patch('controller.SECONDARY_LOCATIONS',[SECONDARY_LOCATION])
+        rotation.start();self.addCleanup(rotation.stop)
+    def test_secondary_sites_rotate_between_gateway_runs(self):
+        c=Controller.__new__(Controller);state={}
+        c.get=lambda key:state.get(key)
+        c.save=lambda key,value:state.update({key:value})
+        with patch('controller.SECONDARY_LOCATIONS',['Toronto','Bowie']),patch.object(c,'scan'):
+            self.assertEqual([c.scheduled_scan() for _ in range(10)],
+                             [PRIMARY_LOCATION]*4+['Toronto']+[PRIMARY_LOCATION]*4+['Bowie'])
     def test_scrolls_to_site_header_and_next_scan_goes_down(self):
         c=Controller.__new__(Controller);c.scan_directions={PRIMARY_LOCATION:'up'}
         top=tree([(PRIMARY_LOCATION,'locationName')]);top[0].set('bounds','[23,175][563,205]')
@@ -27,11 +37,21 @@ class Tests(unittest.TestCase):
         self.assertEqual(sites,([PRIMARY_LOCATION]*4+[SECONDARY_LOCATION])*2)
         self.assertEqual(scan.call_count,10)
         self.assertEqual(state['primary_scans_since_secondary'],0)
-    def test_failed_scan_does_not_advance_rotation(self):
-        c=Controller.__new__(Controller);c.get=lambda key:4
-        with patch.object(c,'scan',side_effect=RuntimeError('UI unavailable')),patch.object(c,'save') as save:
+    def test_failed_secondary_returns_to_gateway(self):
+        c=Controller.__new__(Controller);state={'primary_scans_since_secondary':4}
+        c.get=lambda key:state.get(key);c.save=lambda key,value:state.update({key:value})
+        with patch.object(c,'scan',side_effect=RuntimeError('UI unavailable')):
             with self.assertRaises(RuntimeError):c.scheduled_scan()
-            save.assert_not_called()
+        self.assertEqual(state['primary_scans_since_secondary'],0)
+        self.assertEqual(c.next_scan,0)
+    def test_dual_ports_keep_distinct_statuses(self):
+        root=ET.Element('hierarchy')
+        for label,status in [('478 - 1','Available'),('478 - 2','In Use')]:
+            row=ET.SubElement(root,'node',{'clickable':'true','content-desc':'selectedPortIcon '+label+', '+label})
+            row.append(tree([('BAE713478',''),(status,'')]))
+        rows=station_rows(root,ports=True)
+        self.assertEqual({key:value[0] for key,value in rows.items()},
+            {'BAE713478~478_-_1':'Available','BAE713478~478_-_2':'In Use'})
     def test_secondary_scan_has_no_polling_delay(self):
         c=Controller.__new__(Controller);state={'primary_scans_since_secondary':4}
         c.get=lambda key:state.get(key)
@@ -68,16 +88,16 @@ class Tests(unittest.TestCase):
         c.session=None;c.candidate='BAE607191';c.error=None
         c.event=lambda *a:None;c.adb=lambda *a:None
         root=ET.Element('hierarchy');ET.SubElement(root,'node').append(tree([('BAE600275',''),('Available','')]))
-        with patch.object(c,'location',return_value=root) as location,patch.object(c,'screen',return_value=root),patch.object(c,'availability_alert') as alert:
+        with patch('controller.SECONDARY_LOCATIONS',[]),patch.object(c,'location',return_value=root) as location,patch.object(c,'screen',return_value=root),patch.object(c,'availability_alert') as alert:
             self.assertEqual(c.scan(location=SECONDARY_LOCATION),{'BAE600275':'Available'})
             location.assert_called_once_with(SECONDARY_LOCATION);alert.assert_not_called()
         self.assertEqual(c.db.execute('SELECT location FROM station_locations').fetchone()[0],SECONDARY_LOCATION)
         self.assertEqual(c.candidate,'BAE607191')
-        with patch.object(c,'location',return_value=root) as location:
+        with patch('controller.SECONDARY_LOCATIONS',[]),patch.object(c,'location',return_value=root) as location:
             c.scan('BAE600275');location.assert_called_once_with(SECONDARY_LOCATION)
     def test_location_verifies_selected_site(self):
         c=Controller.__new__(Controller)
-        with patch.object(c,'tab',return_value=tree([('Favorite','')])),patch.object(c,'choose'),patch.object(c,'screen',return_value=tree([(PRIMARY_LOCATION,'')])):
+        with patch.object(c,'adb'),patch.object(c,'tab',return_value=tree([('Favorite','')])),patch.object(c,'choose'),patch.object(c,'screen',return_value=tree([(PRIMARY_LOCATION,'')])):
             with self.assertRaisesRegex(RuntimeError,'Selected location'):
                 c.location(SECONDARY_LOCATION)
     def test_backfill_keeps_grouped_sessions_separate(self):
