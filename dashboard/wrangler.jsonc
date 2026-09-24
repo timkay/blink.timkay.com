@@ -1,0 +1,9 @@
+{
+  "name": "blink-timkay",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "account_id": "20dc0a4b86f9149d47ed8bcbbb2462e5",
+  "routes": [{"pattern": "blink.timkay.com", "custom_domain": true}],
+  "assets": {"directory": "public", "binding": "ASSETS", "run_worker_first": ["/api/*"]},
+  "d1_databases": [{"binding":"DB","database_name":"blink-station-watch","database_id":"1dd4d4c4-ef6c-4ee6-9178-96d94233e136"}]
+}

@@ -1,0 +1,6 @@
+.secrets/
+.build/
+__pycache__/
+dashboard/.wrangler/
+data/*.sqlite3*
+data/

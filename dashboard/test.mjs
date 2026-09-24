@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import worker from './worker.js';
+const env={ADMIN_TOKEN:'test-admin',DEVICE_TOKEN:'test-device',DB:{prepare(){throw Error('Unexpected database access');}}};
+let r=await worker.fetch(new Request('https://blink.timkay.com/api/start',{method:'POST',body:'{}'}),env);
+assert.equal(r.status,401);
+r=await worker.fetch(new Request('https://blink.timkay.com/api/ingest',{method:'POST',body:'{}'}),env);
+assert.equal(r.status,401);
+r=await worker.fetch(new Request('https://blink.timkay.com/api/start',{method:'POST',headers:{Authorization:'Bearer test-admin',Origin:'https://evil.example'},body:'{}'}),env);
+assert.equal(r.status,403);
+r=await worker.fetch(new Request('https://blink.timkay.com/api/start',{method:'POST',headers:{Authorization:'Bearer test-admin',Origin:'https://blink.timkay.com'},body:JSON.stringify({station:'wrong',id:'wrong'})}),env);
+assert.equal(r.status,400);
+console.log('Passed: unauthorized commands, unauthorized ingestion, cross-origin request, invalid station.');

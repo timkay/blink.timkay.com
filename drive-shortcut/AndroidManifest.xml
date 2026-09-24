@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.timkay.driverecent">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+    <queries><package android:name="com.google.android.apps.docs" /></queries>
+    <application android:label="Drive Recent" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:icon="@android:drawable/ic_menu_recent_history">
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

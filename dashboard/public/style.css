@@ -1,0 +1,28 @@
+:root{font-family:system-ui,sans-serif;color:#e7edf4;background:#101720;color-scheme:dark}
+body{margin:0}main{padding:16px}header{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+small{color:#a3dc87;letter-spacing:2px}h1{font-size:28px;margin:8px 0}h2{font-size:19px;margin:18px 0 8px}
+p{color:#a6b5c5}.summary{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;font-size:13px}
+.location-info{font-size:12px;margin:0 0 8px}
+.station-spacer{font-size:12px;overflow-wrap:anywhere}.spacer-sizing{visibility:hidden}
+button{font:inherit;border:1px solid #637a90;border-radius:5px;padding:5px 8px;background:#25394d;color:white;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}[hidden]{display:none!important}#message{color:#ffcf7e}#message:empty{display:none}
+table{width:100%;border-collapse:collapse;table-layout:auto;font-size:13px}
+td,th{padding:4px 6px;text-align:left;vertical-align:middle;font-weight:normal}
+tbody+tbody::before{content:'';display:table-row;height:12px}
+.group-number{text-align:center;color:#a6b5c5;font-variant-numeric:tabular-nums}
+.station-id{font-weight:650;white-space:nowrap;user-select:all}.status{font-weight:650}.status-cell{white-space:nowrap}
+.status-duration{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:12px}
+.status-duration.old-status{color:#ff7777}
+.station-eta,.station-stats{font-size:12px;overflow-wrap:anywhere}.station-eta:empty{padding:0}.station-stats{color:#a6b5c5}
+.available{color:#a3dc87}.connected{color:#7ad9f5}.in-use{color:#ffcf7e}.unavailable,.stale{color:#aeb9c6}
+.unproven .available{color:#ffcf7e}
+.status.no-recent-use{color:#ff7777}
+.status-button{padding:2px 5px;background:transparent;color:white;border-color:#65b85d}
+#priority{display:flex;flex-wrap:wrap;gap:8px}
+.connected-card{flex:1 1 auto;min-width:0;border:1px solid #3d6058;border-left:3px solid #65b85d;border-radius:6px;padding:8px 10px}
+.connected-heading,.connected-metrics{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px}
+.charging-title{display:flex;align-items:center;gap:10px;font-weight:650}
+.connected-heading{font-size:14px}.connected-group,.connected-since{font-size:12px;color:#a6b5c5}
+.connected-since{margin-left:auto}.connected-metrics{margin-top:6px;font-size:12px;color:#a6b5c5}
+.connected-metrics strong{color:#e7edf4;font-variant-numeric:tabular-nums}.connected-session{font-size:12px;margin-top:6px;color:#a3dc87}
+@media(max-width:600px){main{padding:10px}table{font-size:12px}td,th{padding:3px 4px}.station-eta,.station-stats,.station-spacer,.status-duration{font-size:11px}}

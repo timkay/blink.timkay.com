@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS station_locations (id TEXT PRIMARY KEY, location TEXT NOT NULL);

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blink · Gateway</title>
+<link rel="stylesheet" href="/style.css">
+<main>
+  <header><div><small>BLINK / STATION WATCH</small><h1>1850 Gateway Drive</h1><p id="connection">Connecting…</p></div><button id="login">Unlock controls</button></header>
+  <section class="summary" id="summary"></section>
+  <p id="message" role="status"></p>
+  <section aria-labelledby="priority-heading"><h2 id="priority-heading">Connected</h2><p id="empty-connected">No station connected</p><div id="priority" aria-label="Connected stations" hidden></div></section>
+  <section aria-labelledby="all-heading"><h2 id="all-heading">1850 Gateway Drive</h2><table id="stations" aria-label="1850 Gateway Drive stations"></table></section>
+  <section aria-labelledby="redwood-heading"><h2 id="redwood-heading">Redwood City – CN37-12</h2><p class="location-info">1250 Veterans Boulevard · <span id="redwood-summary">Waiting for first scan</span></p><table id="redwood-stations" aria-label="Redwood City stations"></table></section>
+</main>
+<script src="/app.js"></script>
+</html>

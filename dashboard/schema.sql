@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS stations (id TEXT PRIMARY KEY, status TEXT NOT NULL, checked INTEGER NOT NULL, changed INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS station_locations (id TEXT PRIMARY KEY, location TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, station TEXT, time INTEGER NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS events_station_time ON events(station,time);
+CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, station TEXT, started INTEGER, updated INTEGER NOT NULL, state TEXT, kwh REAL, data TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS commands (id TEXT PRIMARY KEY, station TEXT NOT NULL, created INTEGER NOT NULL, expires INTEGER NOT NULL, state TEXT NOT NULL, result TEXT);
+CREATE UNIQUE INDEX IF NOT EXISTS one_pending_command ON commands((1)) WHERE state IN ('queued','claimed');
+CREATE TABLE IF NOT EXISTS device (id INTEGER PRIMARY KEY CHECK(id=1), checked INTEGER, data TEXT);

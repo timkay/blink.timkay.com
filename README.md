@@ -1,0 +1,21 @@
+# Phone-local Blink monitor
+
+**Current system (September 16):** https://blink.timkay.com is live. `supervise.py` + `controller.py` now alternate charging checks and station scans continuously on the phone, with SQLite logging and Cloudflare synchronization. See [DASHBOARD.md](DASHBOARD.md) for controls, credentials, safety guards and restart limitations. Do not run the legacy monitor alongside it. The old `status.json` is not current controller status.
+
+## Legacy single-session prototype (superseded)
+
+Installed in Termux at `~/blink-monitor`. Run `python ~/blink-monitor/monitor.py --device 127.0.0.1:PORT` for each charging session. The phone's wireless ADB must be enabled and locally paired; its port can change after restart. Python, android-tools and termux-api are installed. Pairing was verified on 2026-09-14 without copying Ubuntu's private key.
+
+Keep Blink's round upper-left charging-status screen open. The installed `com.timkay.blinkoverlay` companion service displays an overlay above Blink with estimated remaining H:MM, power, energy and `since Nm` (time since energy last changed). Its display ticks every second; the Termux monitor samples about every 5–6 seconds including UIAutomator overhead. Missing readings are shown quietly on the overlay. The overlay is non-interactive, so Blink controls still work.
+
+Assumes an empty Prius Prime and 5.65 kWh input for a full charge. ETA counts down from remaining energy divided by current kW at the last energy change. It is uncertain and not a completion detector; reaching zero never means stopped. There is NO advance-warning alert. Five minutes means the repeat interval AFTER a confirmed stop. CSV samples are stored in `~/blink-monitor/data/` and current data in `status.json`. Actual stop requires two consecutive readings <=0.10 kW after positive charging was observed. Sound/vibration reminders repeat every five minutes until the notification's **I unplugged** action is pressed (or `touch ~/blink-monitor/acknowledged`). Charging resumption clears the stopped state. Starting again begins a fresh log.
+
+Missing screen data never means unplugged. Stale readings are logged and their age is shown, without stale-data or monitoring-interrupted notifications. Real unplug detection is not established; manual acknowledgement is required. Keep the phone powered: the script temporarily enables stay-awake while charging and restores the original value on clean exit. A Termux wake lock keeps the CPU active; it does not unlock the phone. Android sound/DND/channel settings control audible alerts. The user silenced Termux's wake-lock service notification after it repeatedly chimed.
+
+Overlay Java source and manifest are under `overlay/`. The tested APK is `.build/blink-overlay.apk`, compiled with Android SDK 35 and installed using ADB. The service requires overlay permission and its exported start endpoint is restricted with the signature-level DUMP permission (ADB shell can invoke it). It receives status through the phone-local ADB connection; no web server or external network is used. Android requires a silent foreground-service notification, but countdown information is now on the overlay. Verified on TCL T513V Android 15, 2026-09-14: overlay visible, Blink status remains readable, samples ~5.7 seconds apart. Both `config_supportsMultiWindow` and `config_supportsSplitScreenMultiWindow` return true; no split-screen changes have been made.
+
+No automatic post-reboot startup yet: wireless debugging requires Android permission and port discovery after reboot. Do not claim fully unattended reboot recovery. The script does not start/stop a vehicle session or press Blink's Stop Charge button.
+
+## Public repository boundary
+
+The source and deployment assets in this repository are public. Runtime secrets stay outside Git: `.secrets/` contains the dashboard and device keys, and the phone stores Blink tokens under its private Termux configuration directory. Build output, screenshots, ADB/UI captures, and charging-history exports under `.build/` and `data/` are also intentionally excluded because they are generated or contain private usage/location information. `firebase_probe.py` reads `BLINK_FIREBASE_API_KEY` from the environment rather than embedding client configuration in the repository.
